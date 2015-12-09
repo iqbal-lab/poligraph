@@ -4,6 +4,8 @@
 use strict;
 use warnings;
 use Getopt::Long;
+use Bio::SeqIO;
+use List::Util qw(min);
 
 # parameters needed by this script
 my $contig;
@@ -62,8 +64,9 @@ my $rcmd1 = qx{$cmd1};
 my $seqio = Bio::SeqIO->new(-file => $draft_assembly, '-format' => 'Fasta');
 while(my $seq = $seqio->next_seq) {
 	if ( $seq->id eq $contig ){
-        	my $contig_read_substring = $seq->subseq($start_pos + 1,$end_pos + 1);
-	open (DFILE, ">>$window_dir/draft_assembly.$contig.$start_pos-$end_pos.fa");
+		my $len_contig = length $seq->seq;
+        	my $contig_read_substring = $seq->subseq($start_pos + 1, min($len_contig, $end_pos));
+	open (DFILE, ">$window_dir/draft_assembly.$contig.$start_pos-$end_pos.fa");
 	print DFILE ">$contig.$start_pos-$end_pos\n$contig_read_substring";
 	close(DFILE);
 	}
@@ -71,28 +74,29 @@ while(my $seq = $seqio->next_seq) {
 
 # Make a fastq of miseq reads corresponding to the region
 my $cmd2 = "samtools view  -b $reads_bam $contig:$start_pos-$end_pos -o $window_dir/reads.$contig.$start_pos-$end_pos.bam";
-my $rcmd2 = qx{$cmd2};
+#my $rcmd2 = qx{$cmd2};
 my $cmd3 = "samtools bam2fq $window_dir/reads.$contig.$start_pos-$end_pos.bam > $window_dir/reads.$contig.$start_pos-$end_pos.fq";
-my $rcmd3 = qx{$cmd3};
+#my $rcmd3 = qx{$cmd3};
         
 # Run cortex correction in window
-my $cmd4 = "perl cortex_correction.pl ";
-$cmd4 .="--outdir $window_dir";
-$cmd4 .="--draft_assembly $draft_assembly";
-$cmd4 .="--reads $window_dir/reads.$contig.$start_pos-$end_pos.fq";
-$cmd4 .="--genome_size $window_size";
-$cmd4 .="--cortex_dir $cortex_dir";
-$cmd4 .="--vcftools_dir $vcftools_dir";
-$cmd4 .="--stampy_bin $stampy_bin";
-$cmd4 .="--kmer $k"; 
-$cmd4 .="--pd $pd"; 
-$cmd4 .="--bc $bc"; 
-$cmd4 .="--read_type $read_type"; 
-$cmd4 .="--manual_clean_file $manual_clean_file"; 
-$cmd4 .="--auto_clean $auto_clean"; 
-$cmd4 .="--qthresh $qthresh"; 
-$cmd4 .="&>>$window_dir/log_cortex_correction.txt";
-my $rcmd4 = qx{$cmd4};
+my $cmd4 = "perl cortex_correction.pl";
+$cmd4 .=" --outdir $window_dir";
+$cmd4 .=" --draft_assembly $draft_assembly";
+$cmd4 .=" --reads $window_dir/reads.$contig.$start_pos-$end_pos.fq";
+$cmd4 .=" --genome_size $window_size";
+$cmd4 .=" --cortex_dir $cortex_dir";
+$cmd4 .=" --vcftools_dir $vcftools_dir";
+$cmd4 .=" --stampy_bin $stampy_bin";
+$cmd4 .=" --kmer $k"; 
+$cmd4 .=" --pd $pd"; 
+$cmd4 .=" --bc $bc"; 
+$cmd4 .=" --read_type $read_type"; 
+$cmd4 .=" --manual_clean_file $manual_clean_file"; 
+$cmd4 .=" --auto_clean $auto_clean"; 
+$cmd4 .=" --qthresh $qthresh"; 
+$cmd4 .=" &>>$window_dir/log_cortex_correction.txt";
+print "$cmd4\n";
+#my $rcmd4 = qx{$cmd4};
 
 my $end = "echo \"***** FINISH WINDOW $contig:$start_pos-$end_pos: \$(date)\n\"";
 my $ret_end = qx{$end};

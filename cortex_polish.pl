@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use Bio::SeqIO;
 use Cwd 'abs_path';
+use Getopt::Long;
 
 # parameters needed by this script
 my $draft_assembly;
@@ -44,27 +45,43 @@ my $result = GetOptions (       "draft_assembly=s"              => \$draft_assem
                                 "qthresh=i"                     => \$qthresh
                                                 ) or die "Incorrect usage. $usage\n";
 
+my $start = "echo \"***** START POLIGRAPH: \$(date)\"";
+my $ret_start = qx{$start};
+print $ret_start;
 
 ########################################################################
-# 1. Run BWA-MEM to map miseq reads against draft assembly (nanopolished)
+# 1. Run BWA-MEM to map miseq reads against draft assembly
 ########################################################################
-print "1. Run BWA-MEM to map miseq reads against draft assembly (nanopolished)\n";
+print "\n***** 1. Run BWA-MEM to map miseq reads against draft assembly\n";
 my $cmd1 = "cp $draft_assembly $base_dir/draft_assembly.fa";
+print "$cmd1\n";
+my $rcmd1 = qx{$cmd1};
 my $cmd2 = "bwa index $base_dir/draft_assembly.fa";
+print "$cmd2\n";
+my $rcmd2 = qx{$cmd2};
 my $cmd3 = "bwa mem $base_dir/draft_assembly.fa $reads_fq > $base_dir/reads.sam";
+print "$cmd3\n";
+#my $rcmd3 = qx{$cmd3};
 my $cmd4 = "samtools view -Sb $base_dir/reads.sam > $base_dir/reads.bam";
+print "$cmd4\n";
+#my $rcmd4 = qx{$cmd4};
 my $cmd5 = "samtools sort -o $base_dir/reads_sorted.bam $base_dir/reads.bam";
+print "$cmd5\n";
+#my $rcmd5 = qx{$cmd5};
 my $cmd6 = "samtools index -b $base_dir/reads_sorted.bam";
+print "$cmd6\n";
+#my $rcmd6 = qx{$cmd6};
 
 ########################################################################
 # 2. Correct in windows
 ########################################################################
-print "2. Correct in $window_size b windows\n";
+print "\n***** 2. Correct in $window_size b windows\n";
 my $seqio = Bio::SeqIO->new(-file => $draft_assembly, '-format' => 'Fasta');
 while(my $seq = $seqio->next_seq) {
 	my $contig = $seq->id;
     	my $len_contig = length $seq->seq;
-	my $par = "parallel --gnu -j $NUM_PROCS \"echo {}; perl polish_window.pl";
+	$len_contig = $len_contig - 1;
+	my $par = "parallel --gnu -j $NUM_PROCS \"perl polish_window.pl";
 	$par.=" --contig $contig";
         $par.=" --start_pos {}";
         $par.=" --window_size $window_size";
@@ -83,27 +100,32 @@ while(my $seq = $seqio->next_seq) {
 	$par.=" --qthresh $qthresh";
 	$par.=" --label $label";
 	$par.="\" ::: \$(eval echo {0..$len_contig..$window_size})";
+	#$par.="\" ::: \$(eval echo {0..$window_size..$len_contig})";
 	print "$par\n";
 	my $rpar = qx{$par};
-	print $rpar;
     }
 
 ########################################################################
 # 3. Combine corrected windows
 ########################################################################
-print "2. Combine corrected windows\n";
-my $seqio2 = Bio::SeqIO->new(-file => $draft_assembly, '-format' => 'Fasta');
+print "\n***** 3. Combine corrected windows\n";
+#my $seqio2 = Bio::SeqIO->new(-file => $draft_assembly, '-format' => 'Fasta');
 open (OUTFILE, ">$base_dir/poligraph_corrected.$label.fa");
-while(my $seq = $seqio2->next_seq) {
+while(my $seq = $seqio->next_seq) {
 	my $contig = $seq->id;
 	my $len_contig = length $seq->seq;
 	my $corrected_seq = "";
 	for (my $start_pos = 0; $start_pos <= $len_contig; $start_pos += $window_size) {
 		my $end_pos = $start_pos + $window_size;
-		my $seqio3 = Bio::SeqIO->new(-file => "$base_dir/windows/$contig.$start_pos\-$end_pos/$label/poligraph_corrected.fa", '-format' => 'Fasta');
-		my $record = $seqio3->next_seq;
-		$corrected_seq .= $record->seq;
+		#my $seqio3 = Bio::SeqIO->new(-file => "$base_dir/windows/$contig.$start_pos\-$end_pos/$label/poligraph_corrected.fa", '-format' => 'Fasta');
+		#my $record = $seqio3->next_seq;
+		#$corrected_seq .= $record->seq;
+		print "$end_pos\n";
 	}
 	print OUTFILE ">$contig\n$corrected_seq";
 }
 close(OUTFILE);
+
+my $end = "echo \"***** FINISH POLIGRAPH: \$(date)\"";
+my $ret_end = qx{$end};
+print $ret_end;
