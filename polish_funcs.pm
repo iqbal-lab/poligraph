@@ -1,12 +1,13 @@
 #!/usr/bin/perl
-#use strict;
-#use warnings;
+use strict;
+use warnings;
 
 #sub create_window_and_contents ($base_dir, $k, $label, $window_size, $seq, $start_pos) {
 sub create_window_and_contents {
-	my ($a, $b) = @_;
-	print "$a\n";
-	print "$b\n";
+	my ($base_dir, $k, $label, $window_size, $seq, $start_pos) = @_;
+	print @_;
+	#print "$base_dir\n";
+	print "$start_pos\n";
 #        my $end_pos = $start_pos + $WINDOW_SIZE;
 #        my $contig = $seq->id;
 #

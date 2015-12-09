@@ -7,9 +7,9 @@ my $header = "bash code/header2.sh";
 my $rheader = qx{$header};
 
 #my $draft_assembly = "phillippy_plus_cortex_method/sampleDataOxford/windows/polished.fa";
-my $draft_assembly = 'phillippy_plus_cortex_method/sampleDataOxford/windows/testassembly.fa';
+my $draft_assembly = 'test/testassembly.fa';
 #my $MISEQ_READS = "/Net/cycloid/data3/projects/nanopore/gram_negs/initial_eval_2015/miseq/ecoli_k12_mg1655/MiSeq/1_S1_L001_R1_001_val_1.fq /Net/cycloid/data3/projects/nanopore/gram_negs/initial_eval_2015/miseq/ecoli_k12_mg1655/MiSeq/1_S1_L001_R2_001_val_2.fq";
-my $base_dir = "phillippy_plus_cortex_method/sampleDataOxford/test/";
+my $base_dir = "test";
 my $window_size = 3;
 my $NUM_PROCS = 20;
 my $k = 31;
@@ -33,7 +33,15 @@ my $seqio = Bio::SeqIO->new(-file => $draft_assembly, '-format' => 'Fasta');
 while(my $seq = $seqio->next_seq) {
 	my $contig_read = $seq->seq;
     	my $len_contig = length $contig_read;
-	my $par = "parallel --gnu -j $NUM_PROCS \"echo {}; perl -Mpolish_funcs -e \'create_window_and_contents(hi,there);\'\" ::: \$(eval echo {0..$len_contig..$window_size})";
+	my $par = "parallel --gnu -j $NUM_PROCS \"echo {}; perl -Mpolish_funcs -e \'create_window_and_contents(";
+	$par.=$base_dir.",";
+	$par.=$k.",";
+	$par.=$label.",";
+	$par.=$window_size.",";
+	$par.="hi,";#$seq.",";
+	$par.="{}";
+	$par.=")\'\" ::: \$(eval echo {0..$len_contig..$window_size})";
+	print "$par\n";
    	#my $par = "parallel --gnu -j $NUM_PROCS \"echo {}; perl -Mpolish_funcs -e \'create_window_and_contents(\'$base_dir\',\"$k\",\"$label\",\"$window_size\");\'\" ::: \$(eval echo {0..$len_contig..$window_size})";
 	#my $par = "parallel --gnu -j $NUM_PROCS \"echo {}; perl -Mpolish_funcs -e \'blah\'\" ::: \$(eval echo {0..$len_contig..$window_size})";
 	my $rpar = qx{$par};
