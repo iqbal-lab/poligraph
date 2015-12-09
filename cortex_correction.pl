@@ -11,14 +11,6 @@ use warnings;
 use Getopt::Long;
 use Cwd 'abs_path';
 
-BEGIN
-{
-    my $cortex_dir = '~/apps/cortex/';
-    push ( @INC, $cortex_dir."scripts/calling/");
-}
-
-use BasicUtils qw ( add_slash create_dir_if_does_not_exist );
-
 #### Dear User - you may want to edit stampy_bin, vcftools_dir and cortex_dir
 my $stampy_bin = "/apps/well/stampy/1.0.24-py2.7/stampy.py";
 my $vcftools_dir= "~/apps/vcftools_0.1.13/";
@@ -36,12 +28,15 @@ my $manual_clean_file = "";
 my $auto_clean = "stringent";
 my $qthresh = 10;
 
-my $usage = "usage: $0 --outdir outdir --draft_assembly path/to/draft_assembly.fa --reads path/to/reads.fq --genome_size genome_size [options]";
+my $usage = "usage: $0 --outdir outdir --draft_assembly path/to/draft_assembly.fa --reads path/to/reads.fq --genome_size genome_size --cortex_dir path/to/cortex --vcftools_dir path/to/vcftools --stampy_bin path/to/stampy.py [options]";
 
 my $result = GetOptions (       "outdir=s"                   	=> \$outdir,
                                 "draft_assembly=s"              => \$ref_fa,
 				"reads=s"			=> \$reads_fq,
 				"genome_size=i"                 => \$genome_size,
+				"cortex_dir=s"			=> \$cortex_dir,
+				"vcftools_dir=s"		=> \$vcftools_dir,
+				"stampy_bin=s"			=> \$stampy_bin,
 				"kmer=i"                        => \$k,
 				"pd=s"				=> \$pd,
 				"bc=s"				=> \$bc,
@@ -50,15 +45,9 @@ my $result = GetOptions (       "outdir=s"                   	=> \$outdir,
 				"auto_clean=s"			=> \$auto_clean,
 				"qthresh=i"			=> \$qthresh
                                                 ) or die "Incorrect usage. $usage\n";
-$outdir .="/";
-if (!(-d $outdir))
-{
-	my $mkdir = "mkdir -p $outdir";
-	my $ret_mkdir = qx{$mkdir};
-}
 my $working_dir = abs_path('.');
 
-my $start = "echo \"***** START: \$(date)\n\"";
+my $start = "echo \"***** START CORRECTION: \$(date)\n\"";
 my $ret_start = qx{$start};
 print $ret_start;
 
@@ -66,15 +55,15 @@ print $ret_start;
 # 1. Make graph and stampy hash of draft assembly
 ######################################################################################
 print "***** 1. Make graph and stampy hash of draft assembly\n";
-if (!(-d $outdir/ref/stampy))
+if (!(-d "$outdir/ref/stampy"))
 {
-        my $mkdir = "mkdir -p $outdir/ref/stampy";
-        my $ret_mkdir = qx{$mkdir};
+        my $md = "mkdir -p $outdir/ref/stampy";
+        my $ret_md = qx{$md};
 }
-if (!(-d $outdir/ref/ctx_bins))
+if (!(-d "$outdir/ref/ctx_bins"))
 {
-        my $mkdir = "mkdir -p $outdir/ref/ctx_bins";
-        my $ret_mkdir = qx{$mkdir};
+        my $md2 = "mkdir -p $outdir/ref/ctx_bins";
+        my $ret_md2 = qx{$md2};
 }
 
 my $c1 = "ls $ref_fa > $outdir/ref.list";
@@ -138,9 +127,9 @@ my $c10 = "bgzip $outdir/results/vcfs/output_k".$k."_wk_flow_I_RefCC_FINALcombin
 my $rc10 = qx{$c10};
 my $c11 = "tabix -p vcf $outdir/results/vcfs/output_k".$k."_wk_flow_I_RefCC_FINALcombined_BC_calls_at_all_k.raw.vcf.filtered.gz";
 my $rc11 = qx{$c11};
-my $c12 = "cat $ref_fa | vcf-consensus $outdir/results/vcfs/output_k".$k."_wk_flow_I_RefCC_FINALcombined_BC_calls_at_all_k.raw.vcf.filtered.gz > $outdir/ref_bc_k$k.fa 2>$outdir/log_vcf_consensus_k$k.txt";
+my $c12 = "cat $ref_fa | vcf-consensus $outdir/results/vcfs/output_k".$k."_wk_flow_I_RefCC_FINALcombined_BC_calls_at_all_k.raw.vcf.filtered.gz > $outdir/poligraph_corrected.fa 2>$outdir/log_vcf_consensus_k$k.txt";
 my $rc12 = qx{$c12};
 
-my $end = "echo \"***** FINISH: \$(date)\"";
+my $end = "echo \"***** FINISH CORRECTION: \$(date)\"";
 my $ret_end = qx{$end};
 print $ret_end;

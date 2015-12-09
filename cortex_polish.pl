@@ -2,95 +2,108 @@
 use strict;
 use warnings;
 use Bio::SeqIO;
+use Cwd 'abs_path';
 
-my $header = "bash code/header2.sh";
-my $rheader = qx{$header};
-
-#my $draft_assembly = "phillippy_plus_cortex_method/sampleDataOxford/windows/polished.fa";
-my $draft_assembly = 'test/testassembly.fa';
-#my $MISEQ_READS = "/Net/cycloid/data3/projects/nanopore/gram_negs/initial_eval_2015/miseq/ecoli_k12_mg1655/MiSeq/1_S1_L001_R1_001_val_1.fq /Net/cycloid/data3/projects/nanopore/gram_negs/initial_eval_2015/miseq/ecoli_k12_mg1655/MiSeq/1_S1_L001_R2_001_val_2.fq";
-my $base_dir = "test";
-my $window_size = 3;
+# parameters needed by this script
+my $draft_assembly;
+my $reads_fq;
+my $base_dir = abs_path('.');
+my $window_size = 10000;
 my $NUM_PROCS = 20;
+
+# parameters passed via polish_window.pl script into cortex_correction.pl script
+my $stampy_bin = "/apps/well/stampy/1.0.24-py2.7/stampy.py";
+my $vcftools_dir= "~/apps/vcftools_0.1.13/";
+my $cortex_dir = '~/apps/cortex/';
 my $k = 31;
-my $label = 'test';
+my $bc = "yes";
+my $pd = "no";
+my $read_type = "illumina";
+my $manual_clean_file = "";
+my $auto_clean = "stringent";
+my $qthresh = 10;
+my $label = "k$k.q$qthresh";
 
+my $usage = "usage: $0 --draft_assembly path/to/draft_assembly.fa --reads_fq path/to/reads.fq --base_dir dir_to_work_from --window_size int --num_procs int --label string --cortex_dir path/to/cortex --vcftools_dir path/to/vcftools --stampy_bin path/to/stampy.py [options]";
+
+my $result = GetOptions (       "draft_assembly=s"              => \$draft_assembly,
+				"reads_fq=s"			=> \$reads_fq,
+				"base_dir=s"			=> \$base_dir,
+                                "window_size=i"                 => \$window_size,
+                                "num_procs=i"                   => \$NUM_PROCS,
+				"label=s"			=> \$label,
+                                "cortex_dir=s"                  => \$cortex_dir,
+                                "vcftools_dir=s"                => \$vcftools_dir,
+                                "stampy_bin=s"                  => \$stampy_bin,
+                                "k=i"                           => \$k,
+                                "pd=s"                          => \$pd,
+                                "bc=s"                          => \$bc,
+                                "read_type=s"                   => \$read_type,
+                                "manual_clean_file=s"           => \$manual_clean_file,
+                                "auto_clean=s"                  => \$auto_clean,
+                                "qthresh=i"                     => \$qthresh
+                                                ) or die "Incorrect usage. $usage\n";
+
+
+########################################################################
 # 1. Run BWA-MEM to map miseq reads against draft assembly (nanopolished)
+########################################################################
 print "1. Run BWA-MEM to map miseq reads against draft assembly (nanopolished)\n";
-#my $cmd = "mkdir -p $base_dir/windows_results";
-#my $rcmd = qx{cmd};
-#cp phillippy_plus_cortex_method/sampleDataOxford/polished.fa $base_dir
-#bwa index $base_dir/polished.fa
-#bwa mem $base_dir/polished.fa $MISEQ_READS > $base_dir/miseq_reads.sam
-#samtools view -Sb $base_dir/miseq_reads.sam > $base_dir/miseq_reads.bam
-#samtools sort -o $base_dir/miseq_reads_sorted.bam $base_dir/miseq_reads.bam
-#cp phillippy_plus_cortex_method/sampleDataOxford/windows/""miseq_reads_sorted.bam $base_dir/""miseq_reads_sorted.bam
-#samtools index -b $base_dir/""miseq_reads_sorted.bam
+my $cmd1 = "cp $draft_assembly $base_dir/draft_assembly.fa";
+my $cmd2 = "bwa index $base_dir/draft_assembly.fa";
+my $cmd3 = "bwa mem $base_dir/draft_assembly.fa $reads_fq > $base_dir/reads.sam";
+my $cmd4 = "samtools view -Sb $base_dir/reads.sam > $base_dir/reads.bam";
+my $cmd5 = "samtools sort -o $base_dir/reads_sorted.bam $base_dir/reads.bam";
+my $cmd6 = "samtools index -b $base_dir/reads_sorted.bam";
 
-# 2. Divide up into windows
-print "2. Divide up into $window_size b windows\n";
+########################################################################
+# 2. Correct in windows
+########################################################################
+print "2. Correct in $window_size b windows\n";
 my $seqio = Bio::SeqIO->new(-file => $draft_assembly, '-format' => 'Fasta');
 while(my $seq = $seqio->next_seq) {
-	my $contig_read = $seq->seq;
-    	my $len_contig = length $contig_read;
-	my $par = "parallel --gnu -j $NUM_PROCS \"echo {}; perl -Mpolish_funcs -e \'create_window_and_contents(";
-	$par.=$base_dir.",";
-	$par.=$k.",";
-	$par.=$label.",";
-	$par.=$window_size.",";
-	$par.="hi,";#$seq.",";
-	$par.="{}";
-	$par.=")\'\" ::: \$(eval echo {0..$len_contig..$window_size})";
+	my $contig = $seq->id;
+    	my $len_contig = length $seq->seq;
+	my $par = "parallel --gnu -j $NUM_PROCS \"echo {}; perl polish_window.pl";
+	$par.=" --contig $contig";
+        $par.=" --start_pos {}";
+        $par.=" --window_size $window_size";
+        $par.=" --base_dir $base_dir";
+        $par.=" --draft_assembly $draft_assembly";
+        $par.=" --reads_bam $base_dir/reads_sorted.bam";
+        $par.=" --stampy_bin $stampy_bin";
+        $par.=" --vcftools_dir $vcftools_dir";
+        $par.=" --cortex_dir $cortex_dir";
+        $par.=" --k $k";
+        $par.=" --bc $bc";
+	$par.=" --pd $pd";
+	$par.=" --read_type $read_type";
+	$par.=" --manual_clean_file $manual_clean_file";
+	$par.=" --auto_clean $auto_clean";
+	$par.=" --qthresh $qthresh";
+	$par.=" --label $label";
+	$par.="\" ::: \$(eval echo {0..$len_contig..$window_size})";
 	print "$par\n";
-   	#my $par = "parallel --gnu -j $NUM_PROCS \"echo {}; perl -Mpolish_funcs -e \'create_window_and_contents(\'$base_dir\',\"$k\",\"$label\",\"$window_size\");\'\" ::: \$(eval echo {0..$len_contig..$window_size})";
-	#my $par = "parallel --gnu -j $NUM_PROCS \"echo {}; perl -Mpolish_funcs -e \'blah\'\" ::: \$(eval echo {0..$len_contig..$window_size})";
 	my $rpar = qx{$par};
 	print $rpar;
     }
 
-=comment
-	contig_read=$(sed -n "/$contig/{n;p;}" $draft_assembly)
-	len_contig=$(sed -n "/$contig/{n;p;}" $draft_assembly | wc -c)
-	start_pos=0
-	while [ $start_pos -lt $len_contig ]; do
-		end_pos=$((start_pos + window_size))
-		mkdir -p $base_dir/windows_results/$contig.$start_pos\-$end_pos/k$k$label
-		contig_read_substring=${contig_read:$start_pos:$window_size}
-		echo -e ">$contig.$start_pos-$end_pos\n$contig_read_substring" > $base_dir/windows_results/$contig.$start_pos-$end_pos/k$k$label/draft_assembly.$contig.$start_pos-$end_pos.fa
-		samtools view  -b $base_dir/"miseq_reads_sorted.bam" $contig:$start_pos-$end_pos -o $base_dir/windows_results/$contig.$start_pos-$end_pos/k$k$label/miseq_reads.$contig.$start_pos-$end_pos.bam
-		samtools bam2fq $base_dir/windows_results/$contig.$start_pos-$end_pos/k$k$label/miseq_reads.$contig.$start_pos-$end_pos.bam > $base_dir/windows_results/$contig.$start_pos-$end_pos/k$k$label/miseq_reads.$contig.$start_pos-$end_pos.fq
-		let start_pos=$end_pos
-	done
-done
-
-# 3. For each window, run_calls and correct
-echo "3. For each window, run_calls and correct"
-ls -d $PWD/$base_dir/windows_results/*/k$k$label | parallel --gnu -j $NUM_PROCS 'bash code/cortex_correction.sh {} {}/draft_assembly*.fa '$window_size' '$k' {}/*.fq &>>{}/log_cortex_correction_k'$k$label'.txt'
-
-# 4. Combine corrected windows
-echo "4. Combine corrected windows"
-for contig in $contigs; do
-        contig_read=$(sed -n "/$contig/{n;p;}" $draft_assembly)
-        len_contig=$(sed -n "/$contig/{n;p;}" $draft_assembly | wc -c)
-        start_pos=0
-        while [ $start_pos -lt $len_contig ]; do
-		if [ $start_pos -eq 0 ]; then
-			echo ">$contig" &>> $base_dir/corrected_assembly_k$k$label.fa
-		fi
-		end_pos=$((start_pos + window_size))
-		# want all but first line, and no newlines
-		chunk_seq=$(tail -n +2 $base_dir/windows_results/$contig.$start_pos-$end_pos/k$k$label/ref_bc_k$k.fa)
-		#len_chunk=`expr length $chunk_seq`
-		len_chunk=${#chunk_seq} 
-		if [ "$len_chunk" -lt "$window_size" ]; then
-			echo "$start_pos seq is $len_chunk bps long, shorter than $window_size"
-		fi
-		echo "$chunk_seq"  &>> $base_dir/corrected_assembly_k$k$label.fa.tmp
-		let start_pos=$end_pos
-        done
-done
-cat $base_dir/corrected_assembly_k$k$label.fa.tmp | tr -d '[:space:]' &>> $base_dir/corrected_assembly_k$k$label.fa
-rm $base_dir/corrected_assembly_k$k$label.fa.tmp
-=cut
-my $footer = "bash code/footer.sh";
-my $rfooter = qx{$footer};
+########################################################################
+# 3. Combine corrected windows
+########################################################################
+print "2. Combine corrected windows\n";
+my $seqio2 = Bio::SeqIO->new(-file => $draft_assembly, '-format' => 'Fasta');
+open (OUTFILE, ">$base_dir/poligraph_corrected.$label.fa");
+while(my $seq = $seqio2->next_seq) {
+	my $contig = $seq->id;
+	my $len_contig = length $seq->seq;
+	my $corrected_seq = "";
+	for (my $start_pos = 0; $start_pos <= $len_contig; $start_pos += $window_size) {
+		my $end_pos = $start_pos + $window_size;
+		my $seqio3 = Bio::SeqIO->new(-file => "$base_dir/windows/$contig.$start_pos\-$end_pos/$label/poligraph_corrected.fa", '-format' => 'Fasta');
+		my $record = $seqio3->next_seq;
+		$corrected_seq .= $record->seq;
+	}
+	print OUTFILE ">$contig\n$corrected_seq";
+}
+close(OUTFILE);
