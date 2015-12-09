@@ -50,8 +50,12 @@ my $result = GetOptions (       "outdir=s"                   	=> \$outdir,
 				"auto_clean=s"			=> \$auto_clean,
 				"qthresh=i"			=> \$qthresh
                                                 ) or die "Incorrect usage. $usage\n";
-$outdir = BasicUtils::add_slash($outdir);
-BasicUtils::create_dir_if_does_not_exist($outdir, "make outdir if doesn't exist");
+$outdir .="/";
+if (!(-d $outdir))
+{
+	my $mkdir = "mkdir -p $outdir";
+	my $ret_mkdir = qx{$mkdir};
+}
 my $working_dir = abs_path('.');
 
 my $start = "echo \"***** START: \$(date)\n\"";
@@ -62,9 +66,17 @@ print $ret_start;
 # 1. Make graph and stampy hash of draft assembly
 ######################################################################################
 print "***** 1. Make graph and stampy hash of draft assembly\n";
+if (!(-d $outdir/ref/stampy))
+{
+        my $mkdir = "mkdir -p $outdir/ref/stampy";
+        my $ret_mkdir = qx{$mkdir};
+}
+if (!(-d $outdir/ref/ctx_bins))
+{
+        my $mkdir = "mkdir -p $outdir/ref/ctx_bins";
+        my $ret_mkdir = qx{$mkdir};
+}
 
-BasicUtils::create_dir_if_does_not_exist("$outdir/ref/stampy", "make stampy dir if doesn't exist");
-BasicUtils::create_dir_if_does_not_exist("$outdir/ref/ctx_bins", "make cortex dir if doesn't exist");
 my $c1 = "ls $ref_fa > $outdir/ref.list";
 my $rc1 = qx{$c1};
 my $c2 = "cortex_var_31_c1 --kmer_size $k --mem_height 20 --mem_width 100";
