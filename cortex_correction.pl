@@ -115,21 +115,21 @@ $c8 .= " --vcftools_dir $vcftools_dir --do_union yes";
 $c8 .= " --ref CoordinatesAndInCalling --workflow independent --logfile $outdir/log_run_calls_k$k.txt";
 $c8 .= " --gt_assemblies no";
 print "$c8\n";
-#my $rc8 = qx{$c8};
+my $rc8 = qx{$c8};
 
 ######################################################################################
 # 3. Correct the draft assembly with calls
 ######################################################################################
 print "***** 3. Correct the draft assembly with calls\n";
 
-#my $c9 = "perl filter_cortex_vcf.pl $outdir/results/vcfs/output_k".$k."_wk_flow_I_RefCC_FINALcombined_BC_calls_at_all_k.raw.vcf";
-#my $rc9 = qx{$c9};
-#my $c10 = "bgzip $outdir/results/vcfs/output_k".$k."_wk_flow_I_RefCC_FINALcombined_BC_calls_at_all_k.raw.vcf.filtered";
-#my $rc10 = qx{$c10};
-#my $c11 = "tabix -p vcf $outdir/results/vcfs/output_k".$k."_wk_flow_I_RefCC_FINALcombined_BC_calls_at_all_k.raw.vcf.filtered.gz";
-#my $rc11 = qx{$c11};
-#my $c12 = "cat $ref_fa | vcf-consensus $outdir/results/vcfs/output_k".$k."_wk_flow_I_RefCC_FINALcombined_BC_calls_at_all_k.raw.vcf.filtered.gz > $outdir/poligraph_corrected.fa 2>$outdir/log_vcf_consensus_k$k.txt";
-#my $rc12 = qx{$c12};
+my $c9 = "perl filter_cortex_vcf.pl $outdir/results/vcfs/output_k".$k."_wk_flow_I_RefCC_FINALcombined_BC_calls_at_all_k.raw.vcf";
+my $rc9 = qx{$c9};
+my $c10 = "bgzip $outdir/results/vcfs/output_k".$k."_wk_flow_I_RefCC_FINALcombined_BC_calls_at_all_k.raw.vcf.filtered";
+my $rc10 = qx{$c10};
+my $c11 = "tabix -p vcf $outdir/results/vcfs/output_k".$k."_wk_flow_I_RefCC_FINALcombined_BC_calls_at_all_k.raw.vcf.filtered.gz";
+my $rc11 = qx{$c11};
+my $c12 = "cat $ref_fa | vcf-consensus $outdir/results/vcfs/output_k".$k."_wk_flow_I_RefCC_FINALcombined_BC_calls_at_all_k.raw.vcf.filtered.gz > $outdir/poligraph_corrected.fa 2>$outdir/log_vcf_consensus_k$k.txt";
+my $rc12 = qx{$c12};
 
 my $end = "echo \"***** FINISH CORRECTION: \$(date)\"";
 my $ret_end = qx{$end};

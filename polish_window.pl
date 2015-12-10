@@ -74,9 +74,9 @@ while(my $seq = $seqio->next_seq) {
 
 # Make a fastq of miseq reads corresponding to the region
 my $cmd2 = "samtools view  -b $reads_bam $contig:$start_pos-$end_pos -o $window_dir/reads.$contig.$start_pos-$end_pos.bam";
-#my $rcmd2 = qx{$cmd2};
+my $rcmd2 = qx{$cmd2};
 my $cmd3 = "samtools bam2fq $window_dir/reads.$contig.$start_pos-$end_pos.bam > $window_dir/reads.$contig.$start_pos-$end_pos.fq";
-#my $rcmd3 = qx{$cmd3};
+my $rcmd3 = qx{$cmd3};
         
 # Run cortex correction in window
 my $cmd4 = "perl cortex_correction.pl";
@@ -96,7 +96,7 @@ $cmd4 .=" --auto_clean $auto_clean";
 $cmd4 .=" --qthresh $qthresh"; 
 $cmd4 .=" &>>$window_dir/log_cortex_correction.txt";
 print "$cmd4\n";
-#my $rcmd4 = qx{$cmd4};
+my $rcmd4 = qx{$cmd4};
 
 my $end = "echo \"***** FINISH WINDOW $contig:$start_pos-$end_pos: \$(date)\n\"";
 my $ret_end = qx{$end};

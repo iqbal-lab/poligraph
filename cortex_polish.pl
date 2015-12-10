@@ -53,6 +53,11 @@ print $ret_start;
 # 1. Run BWA-MEM to map miseq reads against draft assembly
 ########################################################################
 print "\n***** 1. Run BWA-MEM to map miseq reads against draft assembly\n";
+if (!(-d "base_dir"))
+{
+        my $md = "mkdir -p $base_dir";
+        my $ret_md = qx{$md};
+}
 my $cmd1 = "cp $draft_assembly $base_dir/draft_assembly.fa";
 print "$cmd1\n";
 my $rcmd1 = qx{$cmd1};
@@ -61,16 +66,16 @@ print "$cmd2\n";
 my $rcmd2 = qx{$cmd2};
 my $cmd3 = "bwa mem $base_dir/draft_assembly.fa $reads_fq > $base_dir/reads.sam";
 print "$cmd3\n";
-#my $rcmd3 = qx{$cmd3};
+my $rcmd3 = qx{$cmd3};
 my $cmd4 = "samtools view -Sb $base_dir/reads.sam > $base_dir/reads.bam";
 print "$cmd4\n";
-#my $rcmd4 = qx{$cmd4};
+my $rcmd4 = qx{$cmd4};
 my $cmd5 = "samtools sort -o $base_dir/reads_sorted.bam $base_dir/reads.bam";
 print "$cmd5\n";
-#my $rcmd5 = qx{$cmd5};
+my $rcmd5 = qx{$cmd5};
 my $cmd6 = "samtools index -b $base_dir/reads_sorted.bam";
 print "$cmd6\n";
-#my $rcmd6 = qx{$cmd6};
+my $rcmd6 = qx{$cmd6};
 
 ########################################################################
 # 2. Correct in windows
@@ -117,9 +122,9 @@ while(my $seq = $seqio->next_seq) {
 	my $corrected_seq = "";
 	for (my $start_pos = 0; $start_pos <= $len_contig; $start_pos += $window_size) {
 		my $end_pos = $start_pos + $window_size;
-		#my $seqio3 = Bio::SeqIO->new(-file => "$base_dir/windows/$contig.$start_pos\-$end_pos/$label/poligraph_corrected.fa", '-format' => 'Fasta');
-		#my $record = $seqio3->next_seq;
-		#$corrected_seq .= $record->seq;
+		my $seqio2 = Bio::SeqIO->new(-file => "$base_dir/windows/$contig.$start_pos\-$end_pos/$label/poligraph_corrected.fa", '-format' => 'Fasta');
+		my $record = $seqio2->next_seq;
+		$corrected_seq .= $record->seq;
 		print "$end_pos\n";
 	}
 	print OUTFILE ">$contig\n$corrected_seq";
