@@ -83,12 +83,16 @@ my $rc4 = qx{$c4};
 print "***** 2. Run calls with reads against draft assembly with cortex\n";
 
 # Make INDEX for read fastqs
-#my $c5 = "rm $outdir/reads_fq.list";
-#my $rc5 = qx{$c5};
-#my $c6 = "for f in $reads_fq; do echo -e \$(readlink -f \$f) &>> $outdir/reads_fq.list; done";
-#my $rc6 = qx{$c6};
-#my $c7 = "echo -e \"reads_fq\t\$(readlink -f $outdir/reads_fq.list)\t.\t.\" &> $outdir/INDEX";
-#my $rc7 = qx{$c7};
+if (!(-e "$outdir/reads_fq.list"))
+{
+	my $c5 = "rm $outdir/reads_fq.list";
+	my $rc5 = qx{$c5};
+}
+my $c6 = "for f in $reads_fq; do echo -e \$(readlink -f \$f) &>> $outdir/reads_fq.list; done";
+print $c6;
+my $rc6 = qx{$c6};
+my $c7 = "echo -e \"reads_fq\t\$(readlink -f $outdir/reads_fq.list)\t.\t.\" &> $outdir/INDEX";
+my $rc7 = qx{$c7};
 
 # If running in windows, don't need as much memory
 my $mem_height;

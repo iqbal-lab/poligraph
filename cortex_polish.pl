@@ -10,6 +10,7 @@ my $draft_assembly;
 my $reads_fq;
 my $base_dir = abs_path('.');
 my $window_size = 10000;
+my $global;
 my $NUM_PROCS = 20;
 
 # parameters passed via polish_window.pl script into cortex_correction.pl script
@@ -31,7 +32,8 @@ my $result = GetOptions (       "draft_assembly=s"              => \$draft_assem
 				"reads_fq=s"			=> \$reads_fq,
 				"base_dir=s"			=> \$base_dir,
                                 "window_size=i"                 => \$window_size,
-                                "num_procs=i"                   => \$NUM_PROCS,
+                                "global"			=> \$global,
+				"num_procs=i"                   => \$NUM_PROCS,
 				"label=s"			=> \$label,
                                 "cortex_dir=s"                  => \$cortex_dir,
                                 "vcftools_dir=s"                => \$vcftools_dir,
@@ -49,28 +51,51 @@ my $start = "echo \"***** START POLIGRAPH: \$(date)\"";
 my $ret_start = qx{$start};
 print $ret_start;
 
-########################################################################
-# 1. Run BWA-MEM to map miseq reads against draft assembly
-########################################################################
-print "\n***** 1. Run BWA-MEM to map miseq reads against draft assembly\n";
 if (!(-d "base_dir"))
 {
         my $md = "mkdir -p $base_dir";
         my $ret_md = qx{$md};
 }
+
+if ( $global ){
+print "\n***** 1. Run cortex correction globally\n";
+my $cmd = "perl cortex_correction.pl";
+$cmd .=" --outdir $base_dir";
+$cmd .=" --draft_assembly $draft_assembly";
+$cmd .=" --reads \"$reads_fq\"";
+$cmd .=" --genome_size 5000000";
+$cmd .=" --cortex_dir $cortex_dir";
+$cmd .=" --vcftools_dir $vcftools_dir";
+$cmd .=" --stampy_bin $stampy_bin";
+$cmd .=" --kmer $k";
+$cmd .=" --pd $pd";
+$cmd .=" --bc $bc";
+$cmd .=" --read_type $read_type";
+$cmd .=" --manual_clean_file $manual_clean_file";
+$cmd .=" --auto_clean $auto_clean";
+$cmd .=" --qthresh $qthresh";
+$cmd .=" &>>$base_dir/log_cortex_correction.txt";
+print "$cmd\n";
+my $rcmd = qx{$cmd};
+} else {
+########################################################################
+# 1. Run BWA-MEM to map miseq reads against draft assembly
+########################################################################
+print "\n***** 1. Run BWA-MEM to map miseq reads against draft assembly\n";
+
 my $cmd1 = "cp $draft_assembly $base_dir/draft_assembly.fa";
 print "$cmd1\n";
-my $rcmd1 = qx{$cmd1};
+#my $rcmd1 = qx{$cmd1};
 my $cmd2 = "bwa index $base_dir/draft_assembly.fa";
 print "$cmd2\n";
-my $rcmd2 = qx{$cmd2};
+#my $rcmd2 = qx{$cmd2};
 my $cmd3 = "bwa mem $base_dir/draft_assembly.fa $reads_fq > $base_dir/reads.sam";
 print "$cmd3\n";
-my $rcmd3 = qx{$cmd3};
+#my $rcmd3 = qx{$cmd3};
 my $cmd4 = "samtools view -Sb $base_dir/reads.sam > $base_dir/reads.bam";
 print "$cmd4\n";
-my $rcmd4 = qx{$cmd4};
-my $cmd5 = "samtools sort -o $base_dir/reads_sorted.bam $base_dir/reads.bam";
+#my $rcmd4 = qx{$cmd4};
+my $cmd5 = "samtools sort $base_dir/reads.bam -o $base_dir/reads_sorted.bam";
 print "$cmd5\n";
 my $rcmd5 = qx{$cmd5};
 my $cmd6 = "samtools index -b $base_dir/reads_sorted.bam";
@@ -130,7 +155,7 @@ while(my $seq = $seqio->next_seq) {
 	print OUTFILE ">$contig\n$corrected_seq";
 }
 close(OUTFILE);
-
+}
 my $end = "echo \"***** FINISH POLIGRAPH: \$(date)\"";
 my $ret_end = qx{$end};
 print $ret_end;
