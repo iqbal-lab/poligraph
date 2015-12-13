@@ -3,9 +3,9 @@ Polish a nanopore assembly using Illumina reads
 
 1. Take as input the nanopore assembly, and fastq(s) of illumina reads for the assembly.
 2. Map the illumina reads to the draft assembly.
-2. Take 10kb chunks of the assembly, and pull out the relevant reads.
-3. For each chunk, call variants against the reference, and fix up the ref.
-4. Then take the fixed up ref and run standard WG Cortex calling, and again fix up.
+3. Take 10kb chunks of the assembly, and pull out the relevant reads.
+4. For each chunk, call variants against the reference, and fix up the ref.
+(5. Rerun the script globally and again fix up.)
 
 The quick way - run poligraph globally:
 
