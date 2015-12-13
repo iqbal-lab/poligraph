@@ -25,8 +25,8 @@ Options:
 --stampy_bin path/to/stampy.py.
 --k int, kmer size for de bruijin graph construction, default 31.
 --bc yes --pd no, exactly one of bc and pd must be yes. This is the method used by cortex to call variants.
---read_type, options are "illumina" or "ont". If ont, changes auto_clean to "yes" an qthresh 2 unless otherwise specified.
+--read_type, options are "illumina" or "ont". Currently does nothing. In future if ont, changes auto_clean to "yes" an qthresh 2 unless otherwise specified.
 --manual_clean_file, a file containing the line "reads_fq \t $k \t cleaning_threshold \n". If specified, takes precedance over auto_clean parameter
 --auto_clean, either "stringent", "yes" or "no". Default is "stringent" for illumina data.
---qthresh int, default 10
+--qthresh int, default 10.
 
