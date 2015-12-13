@@ -83,7 +83,7 @@ my $rc4 = qx{$c4};
 print "***** 2. Run calls with reads against draft assembly with cortex\n";
 
 # Make INDEX for read fastqs
-if (!(-e "$outdir/reads_fq.list"))
+if ( -e "$outdir/reads_fq.list" )
 {
 	my $c5 = "rm $outdir/reads_fq.list";
 	my $rc5 = qx{$c5};
