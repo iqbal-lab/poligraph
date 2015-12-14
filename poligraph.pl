@@ -5,6 +5,8 @@ use Bio::SeqIO;
 use Cwd 'abs_path';
 use Getopt::Long;
 
+my $poli_dir = abs_path($0);
+$poli_dir =~ s/poligraph.pl//;
 # parameters needed by this script
 my $draft_assembly;
 my $reads_fq;
@@ -50,6 +52,9 @@ my $result = GetOptions (       "draft_assembly=s"              => \$draft_assem
 my $start = "echo \"***** START POLIGRAPH: \$(date)\"";
 my $ret_start = qx{$start};
 print $ret_start;
+my $t1 = "date";
+my $t1r = qx{$t1};
+print "$t1r\n";
 
 if (!(-d "base_dir"))
 {
@@ -59,7 +64,7 @@ if (!(-d "base_dir"))
 
 if ( $global ){
 print "\n***** 1. Run cortex correction globally\n";
-my $cmd = "perl cortex_correction.pl";
+my $cmd = "perl $poli_dir"."cortex_correction.pl";
 $cmd .=" --outdir $base_dir";
 $cmd .=" --draft_assembly $draft_assembly";
 $cmd .=" --reads \"$reads_fq\"";
@@ -77,6 +82,9 @@ $cmd .=" --qthresh $qthresh";
 $cmd .=" &>>$base_dir/log_cortex_correction.txt";
 print "$cmd\n";
 my $rcmd = qx{$cmd};
+$t1r = qx{$t1};
+print "$t1r\n";
+
 } else {
 ########################################################################
 # 1. Run BWA-MEM to map miseq reads against draft assembly
@@ -156,6 +164,9 @@ while(my $seq = $seqio->next_seq) {
 }
 close(OUTFILE);
 }
+$t1r = qx{$t1};
+print "$t1r\n";
+
 my $end = "echo \"***** FINISH POLIGRAPH: \$(date)\"";
 my $ret_end = qx{$end};
 print $ret_end;
