@@ -27,7 +27,7 @@ my $manual_clean_file = "";
 my $auto_clean = "stringent";
 my $qthresh = 10;
 my $label = "k$k.q$qthresh";
-
+my $genome_size = 5000000;
 my $usage = "usage: $0 --draft_assembly path/to/draft_assembly.fa --reads_fq path/to/reads.fq --base_dir dir_to_work_from --window_size int --num_procs int --label string --cortex_dir path/to/cortex --vcftools_dir path/to/vcftools --stampy_bin path/to/stampy.py [options]";
 
 my $result = GetOptions (       "draft_assembly=s"              => \$draft_assembly,
@@ -41,6 +41,7 @@ my $result = GetOptions (       "draft_assembly=s"              => \$draft_assem
                                 "vcftools_dir=s"                => \$vcftools_dir,
                                 "stampy_bin=s"                  => \$stampy_bin,
                                 "k=i"                           => \$k,
+				"genome_size=s"                 => \$genome_size,
                                 "pd=s"                          => \$pd,
                                 "bc=s"                          => \$bc,
                                 "read_type=s"                   => \$read_type,
@@ -68,7 +69,7 @@ my $cmd = "perl $poli_dir"."cortex_correction.pl";
 $cmd .=" --outdir $base_dir";
 $cmd .=" --draft_assembly $draft_assembly";
 $cmd .=" --reads \"$reads_fq\"";
-$cmd .=" --genome_size 5000000";
+$cmd .=" --genome_size $genome_size";
 $cmd .=" --cortex_dir $cortex_dir";
 $cmd .=" --vcftools_dir $vcftools_dir";
 $cmd .=" --stampy_bin $stampy_bin";
@@ -119,7 +120,7 @@ while(my $seq = $seqio->next_seq) {
 	my $contig = $seq->id;
     	my $len_contig = length $seq->seq;
 	$len_contig = $len_contig - 1;
-	my $par = "parallel --gnu -j $NUM_PROCS \"perl polish_window.pl";
+	my $par = "parallel --gnu -j $NUM_PROCS \"perl $poli_dir"."polish_window.pl";
 	$par.=" --contig $contig";
         $par.=" --start_pos {}";
         $par.=" --window_size $window_size";
