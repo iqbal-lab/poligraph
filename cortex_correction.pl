@@ -13,12 +13,12 @@ use Cwd 'abs_path';
 
 #### Dear User - you may want to edit stampy_bin, vcftools_dir and cortex_dir
 my $stampy_bin = "/apps/well/stampy/1.0.24-py2.7/stampy.py";
-my $vcftools_dir= "~/apps/vcftools_0.1.13/";
-my $cortex_dir = '~/apps/cortex/';
+my $vcftools_dir= "vcftools_0.1.13/";
+my $cortex_dir = 'cortex/';
 my $poli_dir = abs_path($0);
 $poli_dir =~ s/cortex_correction.pl//;
 
-my $outdir;
+my $outdir = ".";
 my $ref_fa;
 my $genome_size;
 my $k = 31;
@@ -68,7 +68,7 @@ if (!(-d "$outdir/ref/ctx_bins"))
         my $ret_md2 = qx{$md2};
 }
 
-my $c1 = "ls $ref_fa > $outdir/ref.list";
+my $c1 = "readlink -f $ref_fa > $outdir/ref.list";
 my $rc1 = qx{$c1};
 my $c2 = "cortex_var_31_c1 --kmer_size $k --mem_height 20 --mem_width 100";
 $c2 .= " --se_list $outdir/ref.list --max_read_len 10000";

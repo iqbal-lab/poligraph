@@ -17,8 +17,8 @@ my $NUM_PROCS = 20;
 
 # parameters passed via polish_window.pl script into cortex_correction.pl script
 my $stampy_bin = "/apps/well/stampy/1.0.24-py2.7/stampy.py";
-my $vcftools_dir= "~/apps/vcftools_0.1.13/";
-my $cortex_dir = '~/apps/cortex/';
+my $vcftools_dir= "vcftools_0.1.13/";
+my $cortex_dir = 'cortex/';
 my $k = 31;
 my $bc = "yes";
 my $pd = "no";
